@@ -8,13 +8,15 @@ const rl = readline.createInterface({
 function getUserInput(message) {
   // possible bad input. should be handled by question's error handling.
   if (typeof message !== 'string') {
+    console.log(`You gave the message: ${message}`);
     console.error('non string message given to readline.');
     return '';
   }
   return new Promise((res) => {
     rl.question(message, (input) => {
-      rl.close()
-        .then(() => res(input));
+      rl.pause();
+      console.log(`THIS RUNS FAM AND THE INPUT IS ${input}`);
+      res(input);
     });
   });
 }
@@ -41,7 +43,7 @@ class Minesweeper {
 
     while (this.gameInProgress) {
       this.draw();
-      await this.makePlayerMove(); // returns move string.
+      await this.makePlayerMove();
     }
   }
 
@@ -55,8 +57,13 @@ class Minesweeper {
   async getValidMove() {
     let userIsFlagging = false;
     let position;
+    let input;
+    const setTempInput = function (userInput) {
+      input = userInput;
+    };
+    const askForMoveString = 'Please insert a valid move.';
     do {
-      let input = await getUserInput();
+      await getUserInput(askForMoveString).then(setTempInput);
       if (input.length > 1 && input.length <= 4) {
         userIsFlagging = (input.charAt(0) === '.');
         if (userIsFlagging) {
@@ -73,15 +80,21 @@ class Minesweeper {
   }
 
   async init() {
+    this.mines = [];
     const difficulties = { E: [9, 9, 10], M: [16, 16, 40], H: [30, 16, 99] };
     const difficultyMessage = 'Please enter a difficulty: E, M, H.';
     // TODO: handle custom difficulty.
     let difficulty;
+    let difficultyChar;
+    const setDifficultyChar = function (userInput) {
+      difficultyChar = userInput.charAt(0).toUpperCase();
+    };
     do {
-      const difficultyChar = await getUserInput(difficultyMessage).charAt(0).toUpperCase();
+      await getUserInput(difficultyMessage)
+        .then(setDifficultyChar);
       difficulty = difficulties[difficultyChar];
     } while (difficulty === undefined);
-
+    console.log('this should run afer the promise stuff');
     [this.width, this.height, this.bombCount] = difficulty;
     this.boardSize = this.width * this.height;
     this.leftToVisit = this.boardSize - this.bombCount;
@@ -97,15 +110,15 @@ class Minesweeper {
   }
 
   gameWon() {
-    console.log('Congratulations! You have cleanly swept the mine!');
     this.gameInProgress = false;
     this.draw();
+    console.log('Congratulations! You have cleanly swept the mine!');
   }
 
   gameLost() {
-    console.log('Game over! You detonated a bomb!');
     this.gameInProgress = false;
     this.draw();
+    console.log('Game over! You detonated a bomb!');
   }
 
   async makeFirstMove() {
@@ -150,7 +163,7 @@ class Minesweeper {
   }
 
   toggleFlag(pos) {
-    this.isFlagged(pos) ? this.flag(pos) : this.unflag(pos);
+    this.isFlagged(pos) ? this.unflag(pos) : this.flag(pos);
   }
 
   flag(pos) {
@@ -193,7 +206,7 @@ class Minesweeper {
   }
 
   getNeighbors(pos) {
-    const neighbors = []; // can maybe make this array global and only create one. meh.
+    const neighbors = [];
     const w = this.width;
 
     neighbors.push(pos - w);
@@ -216,8 +229,20 @@ class Minesweeper {
     if (typeof rowChar !== 'string') return -1;
     if (isNaN(col)) return -1;
 
-    const rowNum = rowChar.charToI.charCodeAt() - 65;
+    const rowNum = rowChar.charCodeAt() - 65;
     return (rowNum * this.width) + col;
+  }
+
+  iToCoord(pos) {
+    // w: 20
+    // ex: pos: 15 => a15
+    // pos: 46 => c6
+    const w = this.width;
+    const charNum = Math.floor(pos / w);
+    const colNum = pos - (charNum * w);
+    const char = String.fromCharCode(charNum + 65);
+    const colString = colNum < 10 ? ` ${colNum}` : `${colNum}`;
+    return `${char}${colString}`;
   }
 
   draw() {
@@ -226,6 +251,21 @@ class Minesweeper {
     // else if isFlagged(mine[i]), draw F.
     // else draw blank.
     console.log(`Bombs: ${this.bombCount - this.flagCount} Time: TODO Clicks: ${this.moveCount}`);
+    let position = 0;
+    for (let i = 0; i < this.height; i += 1) {
+      // print the row.
+      const row = [];
+      for (let j = 0; j < this.width; j += 1) {
+        let char;
+        if (this.isVisited(position)) char = ` ${this.mines[position] - 10} `;
+        else if (this.isFlagged(position)) char = ' F ';
+        else if (this.gameInProgress) char = `${this.iToCoord(position)}`;
+        else char = ' X ';
+        row.push(char);
+        position += 1;
+      }
+      console.log(`| ${row.join(' | ')} |`);
+    }
   }
 
   genBombs() {
