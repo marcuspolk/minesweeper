@@ -16,12 +16,6 @@
 // Task: Flag all bombs present in mine.
 
 // yes, just inc by width to find nextRow adj..
-// Cell is clicked.
-// Place cell on stack. While !stack.isEmpty()
-// if there's a bomb there: simple, game over.
-// If not: Assuming we have access to this cell's adj bomb count, if it's 0, put all surrounding unvisited spaces on stack.
-// If it's > 0, simply reveal that number and stop.
-// End of move.
 // When all cells are visited/marked, game is over. Reveal whether won or not...Actually, for all cells to have been visited and have no bomb discovered, you already won...
 // Wait but it's possible to have checked all cells as having bomb.
 // So when all cells are visited, let's say we keep an array 'MARKEDINVALID'.
@@ -134,7 +128,11 @@ class Minesweeper {
 
   isPlayable(pos) {
     const cell = this.mines[pos];
-    return (cell >= 0 && cell <= 10);
+    return (cell >= 0 && cell < 10);
+  }
+
+  isAllClear(pos) {
+    return this.mines[pos] === 0;
   }
 
   isBomb(pos) {
@@ -160,17 +158,31 @@ class Minesweeper {
   unflag(pos) {
     this.mines[pos] += 10;
   }
+  // Cell is clicked.
+  // Place cell on stack. While !stack.isEmpty()
+  // if there's a bomb there: simple, game over.
+  // If not: Assuming we have access to this cell's adj bomb count, if it's 0, put all surrounding unvisited spaces on stack.
+  // If it's > 0, simply reveal that number and stop.
+  // End of move.
 
   visit(pos) {
     if (this.isBomb(pos)) {
       return this.gameLost(pos);
     }
-      this.mines[pos] += 10;
-      let neighbors = this.getNeighbors(pos);
+
+    const toVisitStack = [pos]; // stores positions to be visited.
+    while (toVisitStack.length > 0) {
+      let cell = toVisitStack.pop();
+      if (this.isAllClear(cell))
+        this.getNeighbors(cell).forEach(neighbor => toVisitStack.push(neighbor)); //getNeighbors returns onBoard neighboring positions.
+
+    }
+    this.mines[pos] += 10;
+
   }
 
   getNeighbors(pos) {
-    const neighbors = [];
+    const neighbors = []; // can maybe make this array global and only create one. meh.
     const w = this.width;
 
     neighbors.push(pos - w);
