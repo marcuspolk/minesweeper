@@ -8,14 +8,13 @@ const rl = readline.createInterface({
 function getUserInput(message) {
   // possible bad input. should be handled by question's error handling.
   if (typeof message !== 'string') {
-    console.log(`You gave the message: ${message}`);
+    console.error(`You gave the message: ${message}`);
     console.error('non string message given to readline.');
     return '';
   }
   return new Promise((res) => {
     rl.question(message, (input) => {
       rl.pause();
-      console.log(`THIS RUNS FAM AND THE INPUT IS ${input}`);
       res(input);
     });
   });
@@ -42,6 +41,7 @@ class Minesweeper {
     await this.makeFirstMove();
 
     while (this.gameInProgress) {
+      console.log('---------------------------------------------------');
       this.draw();
       await this.makePlayerMove();
     }
@@ -94,7 +94,6 @@ class Minesweeper {
         .then(setDifficultyChar);
       difficulty = difficulties[difficultyChar];
     } while (difficulty === undefined);
-    console.log('this should run afer the promise stuff');
     [this.width, this.height, this.bombCount] = difficulty;
     this.boardSize = this.width * this.height;
     this.leftToVisit = this.boardSize - this.bombCount;
