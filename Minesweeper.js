@@ -1,19 +1,4 @@
-//     A B C D E F G H I // represents 0 -> 8.
-// 0 [ 9 1 0 1 0 1 0 0 1]
-// 1 [ 2 1 0 1 0 0 0 0 1]
-// 2 [ 9 1 0 0 0 1 0 0 1]
-// 3 [ 0 0 0 1 0 1 0 0 1]
-// 4 [ 0 0 0 1 0 1 1 0 1]
-// 5 [ 0 1 0 0 1 1 0 0 1]
-// 6 [ 0 0 0 1 0 1 0 0 1]
-// 7 [ 0 0 0 0 0 1 0 0 1]
-// 8 [ 0 0 0 0 0 1 0 0 1]
-// Height, Width: 9
-//
-// Given: LetterNum A0, pos: (Num*Width + LetterToI)
-// Given: D3 (3 * 9 + 3), pos: 30
 
-// Task: Flag all bombs present in mine.
 
 // yes, just inc by width to find nextRow adj..
 // When all cells are visited/marked, game is over. Reveal whether won or not...Actually, for all cells to have been visited and have no bomb discovered, you already won...
@@ -62,9 +47,14 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-function getUserInput() {
+function getUserInput(message) {
+  // possible bad input. should be handled by question's error handling.
+  if (typeof message !== 'string'){
+    console.error('non string message given to readline.')
+    return '';
+  }
   return new Promise((res, rej) => {
-    rl.question('Please select a cell (CharInt): ', (input) => {
+    rl.question(message, (input) => {
       rl.close()
       .then(()=>res(input));
     });
@@ -73,14 +63,10 @@ function getUserInput() {
 
 class Minesweeper {
   constructor() {
-    console.log('hi');
-    // Prompt for difficulty: E, M, H. C (custom).
-    // Beg: 9 * 9, 10 mines.
-    // Difficulty: [w, h, bombCount]
-    this.difficulties = { E: [9, 9, 10], M: [16, 16, 40], H: [30, 16, 99] };
     this.width = 0;
     this.height = 0;
     this.bombCount = 0;
+    this.flagCount = 0;
     this.leftToVisit = 0;
     this.boardSize = 0;
     this.gameInProgress = true;
@@ -91,7 +77,7 @@ class Minesweeper {
 
   async play() {
     await this.init();
-    await this.getFirstMove();
+    await this.makeFirstMove();
     
     while (this.gameInProgress) {
       this.draw();
@@ -131,8 +117,23 @@ class Minesweeper {
 
   async init() {
     // prompt for difficulty.
-    this.leftToVisit = (this.width * this.height) - this.bombCount;
-    //
+    const difficulties = { E: [9, 9, 10], M: [16, 16, 40], H: [30, 16, 99] };
+    const queryDifficulty = 'Please enter a difficulty: E, M, H.';
+    // TODO: handle custom difficulty.
+    let difficulty;
+    do {
+      let tempDifficultyString = await getUserInput(queryDifficulty).charAt(0).toUpperCase();
+      difficulty = difficulties[tempDifficultyString];
+    } while (difficulty === undefined)
+
+    [this.width, this.height, this.bombCount] = difficulty;
+    this.boardSize = this.width * this.height;
+    this.leftToVisit = this.boardSize - this.bombCount;
+    
+    for (let i = 0; i < this.boardSize; i++) {
+      this.mines[i] = 0;
+    }
+    this.genBombs();
   }
 
   isOnBoard(pos) {
@@ -151,11 +152,26 @@ class Minesweeper {
     this.draw();
   }
 
-  getFirstMove() {
+  makeFirstMove() {
+    let position;
+    do {
+      let tempPosition = await this.getValidMove();
+      if (this.isOnBoard(tempPosition)) {
+        position = tempPosition;
+      } else {
+        console.log('You cannot set a flag as first move.');
+      }
+    } while (position === undefined);
 
-    // getsUserInput
-    // if bomb there, move it to first available place from 0, inc by 1 each time. call placeBomb(i).
+    if (this.isBomb(position)) {
+      let newBombLocation = this.findBomblessCell();
+      this.placeBomb(newBombLocation);
+      this.removeBomb(position);
+    }
+
+    this.explore(position);
   }
+  
 
 
   isPlayable(pos) {
@@ -185,17 +201,13 @@ class Minesweeper {
 
   flag(pos) {
     this.mines[pos] -= 10;
+    this.flagCount += 1;
   }
 
   unflag(pos) {
     this.mines[pos] += 10;
+    this.flagCount -= 1;
   }
-  // Cell is clicked.
-  // Place cell on stack. While !stack.isEmpty()
-  // if there's a bomb there: simple, game over.
-  // If not: Assuming we have access to this cell's adj bomb count, if it's 0, put all surrounding unvisited spaces on stack.
-  // If it's > 0, simply reveal that number and stop.
-  // End of move.
 
   explore(pos) {
     if (this.isFlagged(pos)) { // need to check if flagged before checking if it's a bomb!
@@ -213,13 +225,15 @@ class Minesweeper {
         this.getNeighbors(cell).forEach(neighbor => toVisitStack.push(neighbor)); //getNeighbors returns onBoard neighboring positions.
       if (!this.isVisited(cell) && !this.isFlagged(cell)) {
         this.markVisited(cell);
-        this.leftToVisit -= 1;
+        if (this.leftToVisit === 0) 
+          this.gameWon();  
       }
     }
   }
 
   markVisited(pos) {
     this.mines[pos] += 10;
+    this.leftToVisit -= 1;
   }
 
   getNeighbors(pos) {
@@ -229,7 +243,7 @@ class Minesweeper {
     neighbors.push(pos - w);
     neighbors.push(pos - w - 1);
     neighbors.push(pos - w + 1);
-    neighbors.push (pos - 1);
+    neighbors.push(pos - 1);
     neighbors.push(pos + 1);
     neighbors.push(pos + w);
     neighbors.push(pos + w - 1);
@@ -240,6 +254,14 @@ class Minesweeper {
 
   coordToI(coordinate) {
     // takes coordinate string, converts it to corresponding index.
+    const rowChar = coordinate.charAt(0).toUpperCase();
+    const col = parseInt(coordinate.slice(1));
+    
+    if (typeof rowChar !== 'string') return -1;
+    if (isNaN(col)) return -1;
+
+    const rowNum = rowChar.charToI.charCodeAt() - 65;
+    return (rowNum * this.width) + col;
   }
 
   draw() {
@@ -247,20 +269,44 @@ class Minesweeper {
     // if isExplored(mine[i]), draw mine[i] - 10.
     // else if isFlagged(mine[i]), draw F.
     // else draw blank.
+
   }
 
-  randomBombPos() {
+  genBombs() {
     // if board pct < 30
     // keep generating randoms...
     // otherwise probe after.
     // gen random i in mine size
     // until mine[i] === 0, inc i.
     // return i.
+    for (let i = 0; i < this.bombCount; i++) {
+      let pos = findBomblessCell();
+      placeBomb(pos);
+    }
+  }
+
+  findBomblessCell() {
+    const size = this.boardSize;
+    let position;
+    do {
+      position = Math.floor(Math.random() * size);
+    } while (this.isBomb(position));
+    return position;
   }
 
   placeBomb(position) {
-    // set position to 9.
-    // inc all surrounding
+    this.mines[position] = 9;
+    this.getNeighbors(position).forEach(cell => 
+      {
+        if (!this.isBomb(cell))
+          this.mines[cell] += 1;
+      });
+  }
+  removeBomb(position) {
+    this.mines[position] = this.getNeighbors(position)
+      .reduce((neighborBombCount, cell) => {
+        if (this.isBomb(cell)) neighborBombCount += 1;
+      }, 0);
   }
 }
 
