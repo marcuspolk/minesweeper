@@ -56,7 +56,7 @@
   // soft reset ()
   
 // Data model:
-  // Array of size width * height. 
+  // Array of size width * height.
   // int values for each index where val in range: [-10, 18] (-10 means flagged a 0 surronded. 18 means clicked a completly surrounded)
   // [-10, -1] surCount = val + 10. flagged.
   // [0, 8]: surCount = val. unvisited.
@@ -69,8 +69,39 @@ class Minesweeper {
     console.log('hi');
     // Prompt for difficulty: E, M, H. C (custom).
     // Create the mine array, initialize all values to 0.
-    // For each bomb, assign it to a random unoccupied space. Increment all surrounding non bomb by 1..
-    // 
+    // For each bomb, placeBomb() at randomBombPos(). Increment all surrounding non bomb by 1..
   }
+
+  async play() {
+
+  }
+
+  promptFirstMove() {
+    // getsUserInput
+    // if bomb there, move it to first available place from 0, inc by 1 each time. call placeBomb(i).
+  }
+
+  getUserInput() {
+    // returns promise.
+  }
+
+  draw() {
+
+  }
+
+  randomBombPos() {
+    // if board pct < 30
+    // keep generating randoms...
+    // otherwise probe after.
+    // gen random i in mine size
+    // until mine[i] === 0, inc i. 
+    // return i.
+  }
+
+  placeBomb(position) {
+
+  }
+
+
 
 }
