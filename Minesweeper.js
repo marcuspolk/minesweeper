@@ -5,21 +5,6 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-function getUserInput(message) {
-  // possible bad input. should be handled by question's error handling.
-  if (typeof message !== 'string') {
-    console.error(`You gave the message: ${message}`);
-    console.error('non string message given to readline.');
-    return '';
-  }
-  return new Promise((res) => {
-    rl.question(message, (input) => {
-      rl.pause();
-      res(input);
-    });
-  });
-}
-
 class Minesweeper {
   constructor() {
     this.width = 0;
@@ -30,9 +15,6 @@ class Minesweeper {
     this.boardSize = 0;
     this.moveCount = 0;
     this.gameInProgress = true;
-
-    // Create the mine array, initialize all values to 0.
-    // For each bomb, placeBomb() at randomBombPos(). Increment all surrounding non bomb by 1..
   }
 
   async play() {
@@ -74,7 +56,6 @@ class Minesweeper {
       }
     } while (position === undefined);
 
-    // hacky but necessary given implementation.
     if (userIsFlagging) return (position === 0) ? this.boardSize : position * -1;
     return position;
   }
@@ -97,7 +78,7 @@ class Minesweeper {
   }
 
   explore(pos) {
-    if (this.isFlagged(pos)) { // need to check if flagged before checking if it's a bomb!
+    if (this.isFlagged(pos)) {
       console.log('Please unflag the cell before exploring it.');
       return;
     }
@@ -106,8 +87,7 @@ class Minesweeper {
       this.gameLost(pos);
       return;
     }
-
-    const toVisitStack = [pos]; // stores positions to be visited.
+    const toVisitStack = [pos];
     while (toVisitStack.length > 0) {
       const cell = toVisitStack.pop();
       if (this.isAllClear(cell)) {
@@ -172,12 +152,6 @@ class Minesweeper {
   }
 
   genBombs() {
-    // if board pct < 30
-    // keep generating randoms...
-    // otherwise probe after.
-    // gen random i in mine size
-    // until mine[i] === 0, inc i.
-    // return i.
     for (let i = 0; i < this.bombCount; i += 1) {
       const pos = this.findBomblessCell();
       this.placeBomb(pos);
@@ -207,14 +181,9 @@ class Minesweeper {
       }, 0);
   }
   draw() {
-    // iterate through mine array.
-    // if isExplored(mine[i]), draw mine[i] - 10.
-    // else if isFlagged(mine[i]), draw F.
-    // else draw blank.
     console.log(`Bombs: ${this.bombCount - this.flagCount} Time: TODO Clicks: ${this.moveCount}`);
     let position = 0;
     for (let i = 0; i < this.height; i += 1) {
-      // print the row.
       const row = [];
       for (let j = 0; j < this.width; j += 1) {
         let char;
@@ -230,7 +199,6 @@ class Minesweeper {
   }
 
   coordToI(coordinate) {
-    // takes coordinate string, converts it to corresponding index.
     const rowChar = coordinate.charAt(0).toUpperCase();
     const col = parseInt(coordinate.slice(1), 10);
 
@@ -242,9 +210,6 @@ class Minesweeper {
   }
 
   iToCoord(pos) {
-    // w: 20
-    // ex: pos: 15 => a15
-    // pos: 46 => c6
     const w = this.width;
     const charNum = Math.floor(pos / w);
     const colNum = pos - (charNum * w);
@@ -252,7 +217,7 @@ class Minesweeper {
     const colString = colNum < 10 ? ` ${colNum}` : `${colNum}`;
     return `${char}${colString}`;
   }
-  
+
   async makeFirstMove() {
     let position;
     do {
@@ -297,6 +262,22 @@ class Minesweeper {
     this.genBombs();
   }
 }
+
+function getUserInput(message) {
+  // possible bad input. should be handled by question's error handling.
+  if (typeof message !== 'string') {
+    console.error(`You gave the message: ${message}`);
+    console.error('non string message given to readline.');
+    return '';
+  }
+  return new Promise((res) => {
+    rl.question(message, (input) => {
+      rl.pause();
+      res(input);
+    });
+  });
+}
+
 
 const game = new Minesweeper();
 game.play();
