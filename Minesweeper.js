@@ -55,6 +55,21 @@
 // 9: bomb. unvisited (only possible).
 // [10,18]: curCount = val - 10. visited
 
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function getUserInput() {
+  return new Promise((res, rej) => {
+    rl.question('Please select a cell (CharInt): ', (input) => {
+      rl.close()
+      .then(()=>res(input));
+    });
+  });
+}
 
 class Minesweeper {
   constructor() {
@@ -75,37 +90,43 @@ class Minesweeper {
   }
 
   async play() {
+    await this.init();
+    await this.getFirstMove();
+    
     while (this.gameInProgress) {
       this.draw();
       await this.makePlayerMove(); // returns move string.
-
-
     }
-    promptMove()
   }
 
   makePlayerMove() {
-    // returns promise.
-    // wait for pos where !isVisited
-    // if first char is '=', this is a flag operation.
+    let position = await this.getValidMove();
+    if (this.isOnBoard(position)) this.explore(position);
+    else if (position === this.boardSize) this.toggleFlag(0);
+    else this.toggleFlag(Math.abs(position));
+  }
+
+  getValidMove() { // want this to be used by both makePlayerMove and getFirstMove
+    // returns negative input if flagging the position... how to flag pos 0? return boardSize...hacky. 
+    let userIsFlagging = false;
     let position;
-    let isUserFlagging;
     do {
       // get valid move from user.
       let input = await getUserInput();
       if (input.length > 1 && input.length <= 4) {
-        isUserFlagging = input.charAt(0) === '.';
-        if (isUserFlagging) {
+        userIsFlagging = (input.charAt(0) === '.');
+        if (userIsFlagging) {
           input = input.slice(1);
-        } 
+        }
         const tempPosition = this.coordToI(input); // returns -1 if can't be converted.
-
-        if (this.isOnBoard(tempPosition) && !this.isVisited(tempPosition)) position = tempPosition;
+        if (this.isOnBoard(tempPosition) && !this.isVisited(tempPosition)) position = tempPosition; // <-- SOLE JOB OF THIS FUNCTION.
       }
     } while (position === undefined);
 
-    if (isUserFlagging) this.toggleFlag(position);
-    else this.visit(position);
+    if (userIsFlagging)
+      return (position === 0) ? this.boardSize : position * -1; // hacky but necessary given implementation.
+    else
+      return position;
   }
 
   async init() {
@@ -117,10 +138,21 @@ class Minesweeper {
   isOnBoard(pos) {
     return (pos >= 0 && pos < this.boardSize);
   }
-  gameLost(detonatedBomb) {
 
+  gameWon() {
+    console.log('Congratulations! You have cleanly swept the mine!');
+    this.gameInProgress = false;
+    this.draw();
   }
-  promptFirstMove() {
+  
+  gameLost(detonatedBomb) {
+    console.log('Game over! You detonated a bomb!');
+    this.gameInProgress = false;
+    this.draw();
+  }
+
+  getFirstMove() {
+
     // getsUserInput
     // if bomb there, move it to first available place from 0, inc by 1 each time. call placeBomb(i).
   }
@@ -165,7 +197,11 @@ class Minesweeper {
   // If it's > 0, simply reveal that number and stop.
   // End of move.
 
-  visit(pos) {
+  explore(pos) {
+    if (this.isFlagged(pos)) { // need to check if flagged before checking if it's a bomb!
+      console.log("Please unflag the cell before exploring it.");
+      return;
+    }
     if (this.isBomb(pos)) {
       return this.gameLost(pos);
     }
@@ -175,10 +211,15 @@ class Minesweeper {
       let cell = toVisitStack.pop();
       if (this.isAllClear(cell))
         this.getNeighbors(cell).forEach(neighbor => toVisitStack.push(neighbor)); //getNeighbors returns onBoard neighboring positions.
-
+      if (!this.isVisited(cell) && !this.isFlagged(cell)) {
+        this.markVisited(cell);
+        this.leftToVisit -= 1;
+      }
     }
-    this.mines[pos] += 10;
+  }
 
+  markVisited(pos) {
+    this.mines[pos] += 10;
   }
 
   getNeighbors(pos) {
@@ -224,6 +265,4 @@ class Minesweeper {
 }
 
 const game = new Minesweeper();
-game.init()
-  .then(game.promptFirstMove)
-  .then(game.play);
+game.play();
