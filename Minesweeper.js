@@ -14,9 +14,7 @@
 // Given: D3 (3 * 9 + 3), pos: 30
 
 // Task: Flag all bombs present in mine.
-// Beg: 9 * 9, 10 mines.
-// Inter: 16 * 16, 40 mines
-// Expert: 16 * 30, 99 mines. <----- Does mine traversal work in this case?
+
 // yes, just inc by width to find nextRow adj.. 
 // Cell is clicked.
   // Place cell on stack. While !stack.isEmpty()
@@ -68,6 +66,14 @@ class Minesweeper {
   constructor() {
     console.log('hi');
     // Prompt for difficulty: E, M, H. C (custom).
+    // Beg: 9 * 9, 10 mines.
+    // Difficulty: [w, h, bombCount]
+    this.difficulties = { E: [9, 9, 10], M: [16, 16, 40], H: [30, 16, 99] };
+    this.width;
+    this.height;
+    this.bombCount;
+    this.visitedCount;
+
     // Create the mine array, initialize all values to 0.
     // For each bomb, placeBomb() at randomBombPos(). Increment all surrounding non bomb by 1..
   }
@@ -76,17 +82,65 @@ class Minesweeper {
 
   }
 
+  async init() {
+    // prompt for difficulty. 
+    // 
+  }
+
   promptFirstMove() {
     // getsUserInput
     // if bomb there, move it to first available place from 0, inc by 1 each time. call placeBomb(i).
   }
 
-  getUserInput() {
+  promptMove() {
     // returns promise.
+    // if first char is '=', this is a flag operation.
+    // check coordToI for validity. 
+    // return valid i.
+  }
+
+  isPlayable(pos) {
+    const cell = this.mines[pos];
+    return (cell >= 0 && cell <= 10);
+  }
+
+  isBomb(pos) {
+    return (this.mines[pos] === 9);
+  }
+
+  isVisited(pos) {
+    return (this.mines[pos] >= 10);
+  }
+
+  isFlagged(pos) {
+    return (this.mines[pos] < 0);
+  }
+
+  toggleFlag(pos) {
+    this.isFlagged(pos) ? this.flag(pos) : this.unflag(pos);
+  }
+
+  flag(pos) {
+    this.mines[pos] -= 10;
+  }
+
+  unflag(pos) {
+    this.mines[pos] += 10;
+  }
+
+  explore(pos) {
+    // 
+  }
+
+  coordToI(coordinate) {
+    // takes coordinate string, converts it to corresponding index.
   }
 
   draw() {
-
+    // iterate through mine array.
+      // if isExplored(mine[i]), draw mine[i] - 10.
+      // else if isFlagged(mine[i]), draw F.
+      // else draw blank.
   }
 
   randomBombPos() {
@@ -99,7 +153,8 @@ class Minesweeper {
   }
 
   placeBomb(position) {
-
+    // set position to 9. 
+    // inc all surrounding
   }
 
 
