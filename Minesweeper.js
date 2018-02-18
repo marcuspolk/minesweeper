@@ -84,7 +84,7 @@ class Minesweeper {
     while (this.gameInProgress) {
       this.draw();
       await this.makePlayerMove(); // returns move string.
-      
+
 
     }
     promptMove()
@@ -94,24 +94,25 @@ class Minesweeper {
     // returns promise.
     // wait for pos where !isVisited
     // if first char is '=', this is a flag operation.
-    let position
+    let position;
     let isUserFlagging;
     do {
       // get valid move from user.
-      if (input.length > 4) continue;
-      isUserFlagging = input.charAt(0) === '.';
-      if (isUserFlagging) {
-        input = input.slice(1);
-      } 
-      let tempPosition = this.coordToI(input); // returns -1 if can't be converted.
+      let input = await getUserInput();
+      if (input.length > 1 && input.length <= 4) {
+        isUserFlagging = input.charAt(0) === '.';
+        if (isUserFlagging) {
+          input = input.slice(1);
+        } 
+        const tempPosition = this.coordToI(input); // returns -1 if can't be converted.
 
-      if (this.isOnBoard(tempPosition) && !this.isVisited(tempPosition)) position = tempPosition;
+        if (this.isOnBoard(tempPosition) && !this.isVisited(tempPosition)) position = tempPosition;
+      }
     } while (position === undefined);
 
-    if (isFlagOp) this.toggleFlag(pos);
-    else if () this.explore(pos);
-
-    }
+    if (isUserFlagging) this.toggleFlag(position);
+    else this.visit(position);
+  }
 
   async init() {
     // prompt for difficulty.
@@ -120,9 +121,9 @@ class Minesweeper {
   }
 
   isOnBoard(pos) {
-    return (pos >= 0 && pos <= this.boardSize);
+    return (pos >= 0 && pos < this.boardSize);
   }
-  gameLost() {
+  gameLost(detonatedBomb) {
 
   }
   promptFirstMove() {
@@ -160,8 +161,28 @@ class Minesweeper {
     this.mines[pos] += 10;
   }
 
-  explore(pos) {
-    //
+  visit(pos) {
+    if (this.isBomb(pos)) {
+      return this.gameLost(pos);
+    }
+      this.mines[pos] += 10;
+      let neighbors = this.getNeighbors(pos);
+  }
+
+  getNeighbors(pos) {
+    const neighbors = [];
+    const w = this.width;
+
+    neighbors.push(pos - w);
+    neighbors.push(pos - w - 1);
+    neighbors.push(pos - w + 1);
+    neighbors.push (pos - 1);
+    neighbors.push(pos + 1);
+    neighbors.push(pos + w);
+    neighbors.push(pos + w - 1);
+    neighbors.push(pos + w + 1);
+
+    return neighbors.filter(cell => this.isOnBoard(cell));
   }
 
   coordToI(coordinate) {
