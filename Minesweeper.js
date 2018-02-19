@@ -139,14 +139,21 @@ class Minesweeper {
     const neighbors = [];
     const w = this.width;
 
-    neighbors.push(pos - w);
-    neighbors.push(pos - w - 1);
-    neighbors.push(pos - w + 1);
-    neighbors.push(pos - 1);
-    neighbors.push(pos + 1);
-    neighbors.push(pos + w);
-    neighbors.push(pos + w - 1);
-    neighbors.push(pos + w + 1);
+    const above = pos - w;
+    const aboveRow = Math.floor(above / w);
+    neighbors.push(above); 
+    if (Math.floor((above - 1) / w) === aboveRow) neighbors.push(above - 1);
+    if (Math.floor((above + 1) / w) === aboveRow) neighbors.push(above + 1);
+
+    const curRow = Math.floor(pos / w);
+    if (Math.floor((pos - 1) / w) === curRow) neighbors.push(pos - 1);
+    if (Math.floor((pos + 1) / w) === curRow) neighbors.push(pos + 1);
+
+    const below = pos + w;
+    const belowRow = Math.floor(below / w);
+    neighbors.push(below);
+    if (Math.floor((below - 1) / w) === belowRow) neighbors.push(below - 1);
+    if (Math.floor((below + 1) / w) === belowRow) neighbors.push(below + 1);
 
     return neighbors.filter(cell => this.isOnBoard(cell));
   }
